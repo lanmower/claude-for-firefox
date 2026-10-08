@@ -243,6 +243,8 @@ This is an unofficial community project and is not affiliated with or endorsed b
 
 ## Running alongside Claude for Chrome
 
-Claude Code and Claude Desktop reach a browser through a single named pipe per user (`\.\pipe\claude-mcp-browser-bridge-<user>` on Windows, `/tmp/claude-mcp-browser-bridge-<user>/` elsewhere). Only one native host can own it, so whichever of Chrome or Firefox connects first is the browser Claude Code controls. The other keeps working through the claude.ai bridge but is not reachable over the native pipe until the owning host exits.
+Claude Code's built-in `claude --chrome-native-host` listens on one fixed pipe per user, so a second browser cannot share it, and the claude.ai bridge rejects the `moz-extension://` origin. The installer therefore bundles its own native host (`native/firefox-host.mjs`, own pipe `claude-firefox-bridge-<user>`) and an MCP server (`native/firefox-mcp.mjs`) that it registers with Claude Code as `firefox`.
 
-The Firefox host logs to `~/.claude/firefox/host.log`; `EADDRINUSE` there means another browser's host owns the pipe.
+Chrome keeps using the `claude-in-chrome` tools; Firefox is driven with `mcp__firefox__*` tools (`tabs_context_mcp`, `navigate`, `computer`, `read_page`, `find`, `get_page_text`, `javascript_tool`, ...) which take the same arguments. Both can be used in the same session.
+
+The Firefox host logs to `~/.claude/firefox/host.log`.
