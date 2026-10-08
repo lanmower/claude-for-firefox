@@ -209,6 +209,12 @@ public class CredHelper {
         }
     }
 
+    # Fallback: credentials file written by Claude Code on Windows
+    if (-not $rawCreds) {
+        $credFile = Join-Path $env:USERPROFILE '.claude\.credentials.json'
+        if (Test-Path $credFile) { $rawCreds = Get-Content $credFile -Raw }
+    }
+
     if (-not $rawCreds) {
         Write-Warn "Could not read Claude Code credentials from Windows Credential Manager."
         Write-Warn "Run 'claude' at least once to log in, then re-run this installer."
@@ -318,7 +324,7 @@ if not exist "%EXT_DIR%" (
     exit /b 1
 )
 echo Launching Firefox with Claude extension...
-start "" "$FirefoxPath" --new-instance
+start "" /b cmd /c npx --yes web-ext run --source-dir "%EXT_DIR%" --firefox "$FirefoxPath" --no-reload
 "@
     Set-Content -Path $batPath -Value $batContent -Encoding ASCII
     Write-Ok "Launcher .bat created at $batPath"
@@ -333,7 +339,7 @@ if (-not (Test-Path `$extDir)) {
     exit 1
 }
 Write-Host 'Launching Firefox with Claude extension...'
-Start-Process '$FirefoxPath' -ArgumentList '--new-instance'
+& npx --yes web-ext run --source-dir `$extDir --firefox '$FirefoxPath' --no-reload
 "@
     Set-Content -Path $ps1Path -Value $ps1Content -Encoding UTF8
     Write-Ok "Launcher .ps1 created at $ps1Path"
@@ -390,6 +396,11 @@ public class CredHelper2 {
         Write-Error "Could not read credentials: $_"
         exit 1
     }
+}
+
+if (-not $rawCreds) {
+    $credFile = Join-Path $env:USERPROFILE '.claude\.credentials.json'
+    if (Test-Path $credFile) { $rawCreds = Get-Content $credFile -Raw }
 }
 
 if (-not $rawCreds) {
@@ -462,15 +473,12 @@ function Main {
     Write-Ok "Extension directory: $ExtDir"
 
     # Copy extension files if available
-    $scriptDir = Split-Path -Parent $MyInvocation.ScriptName
-    $srcExtDir = Join-Path $scriptDir 'extension'
-    if (Test-Path $srcExtDir) {
-        Copy-Item -Path "$srcExtDir\*" -Destination $ExtDir -Recurse -Force
-        Write-Ok "Extension files copied to $ExtDir"
-    } else {
-        Write-Warn "No extension\ directory found next to installer. Skipping file copy."
-        Write-Warn "Place extension source files in $ExtDir manually."
+    $srcExtDir = $PSScriptRoot
+    $exclude = @('.git','.gm','.agentplug-kv','node_modules','web-ext-artifacts','install.ps1','install.sh','README.md','.gitignore')
+    Get-ChildItem -Path $srcExtDir -Force | Where-Object { $exclude -notcontains $_.Name -and $_.Name -ne 'firefox-injected-tokens.json' } | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $ExtDir -Recurse -Force
     }
+    Write-Ok "Extension files copied to $ExtDir"
 
     $wrapperPath = Create-NmhWrapper
     Install-NmhManifests -WrapperPath $wrapperPath
