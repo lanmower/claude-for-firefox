@@ -184,7 +184,25 @@
     onMoved: makeEvent(),
   };
 
+  // Firefox rejects about:newtab / chrome://newtab as an explicit URL; omitting it opens the default new tab
+  const NEWTAB_URL = /^(about:newtab\/?|chrome:\/\/newtab\/?)$/;
+  function withoutNewtabUrl(info) {
+    if (!info || typeof info.url !== 'string' || !NEWTAB_URL.test(info.url)) return info;
+    const { url, ...rest } = info;
+    return rest;
+  }
+  const nativeTabsCreate = browser.tabs.create.bind(browser.tabs);
+  chrome.tabs.create = promiseToCallback(async function (info) {
+    return nativeTabsCreate(withoutNewtabUrl(info));
+  });
+  const nativeWindowsCreate = browser.windows.create.bind(browser.windows);
+  chrome.windows.create = promiseToCallback(async function (info) {
+    return nativeWindowsCreate(withoutNewtabUrl(info));
+  });
+
   // Patch chrome.tabs.group
+  const nativeTabsGet = browser.tabs.get.bind(browser.tabs);
+  const nativeTabsQuery = browser.tabs.query.bind(browser.tabs);
   const origTabsGroup = chrome.tabs.group;
   chrome.tabs.group = promiseToCallback(async function (options) {
     await loadGroupCache();
@@ -194,7 +212,7 @@
       let windowId = -1;
       if (tabIds.length > 0) {
         try {
-          const t = await browser.tabs.get(tabIds[0]);
+          const t = await nativeTabsGet(tabIds[0]);
           windowId = t.windowId;
         } catch (_) { /* fallback */ }
       }
@@ -231,21 +249,19 @@
   });
 
   // Patch chrome.tabs.get to include groupId
-  const origTabsGet = chrome.tabs.get.bind(chrome.tabs);
   chrome.tabs.get = promiseToCallback(async function (tabId) {
-    const tab = await browser.tabs.get(tabId);
+    const tab = await nativeTabsGet(tabId);
     await loadGroupCache();
     tab.groupId = tabGroupMap.get(tabId) ?? TAB_GROUP_ID_NONE;
     return tab;
   });
 
   // Patch chrome.tabs.query to include groupId and support groupId filter
-  const origTabsQuery = chrome.tabs.query.bind(chrome.tabs);
   chrome.tabs.query = promiseToCallback(async function (queryInfo) {
     const filterGroupId = queryInfo ? queryInfo.groupId : undefined;
     const cleanQuery = { ...queryInfo };
     delete cleanQuery.groupId;
-    const tabs = await browser.tabs.query(cleanQuery);
+    const tabs = await nativeTabsQuery(cleanQuery);
     await loadGroupCache();
     for (const tab of tabs) {
       tab.groupId = tabGroupMap.get(tab.id) ?? TAB_GROUP_ID_NONE;

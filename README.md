@@ -238,3 +238,11 @@ When submitting a pull request:
 Extension assets are from Anthropic's [Claude browser extension](https://claude.com/claude-for-chrome) (v1.0.70). The Firefox compatibility layer, installers, and native messaging host setup are community-contributed under the MIT license.
 
 This is an unofficial community project and is not affiliated with or endorsed by Anthropic.
+
+---
+
+## Running alongside Claude for Chrome
+
+Claude Code and Claude Desktop reach a browser through a single named pipe per user (`\.\pipe\claude-mcp-browser-bridge-<user>` on Windows, `/tmp/claude-mcp-browser-bridge-<user>/` elsewhere). Only one native host can own it, so whichever of Chrome or Firefox connects first is the browser Claude Code controls. The other keeps working through the claude.ai bridge but is not reachable over the native pipe until the owning host exits.
+
+The Firefox host logs to `~/.claude/firefox/host.log`; `EADDRINUSE` there means another browser's host owns the pipe.

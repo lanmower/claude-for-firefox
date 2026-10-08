@@ -254,20 +254,20 @@ REM Delegates to Claude Code's built-in native messaging handler.
 
 if defined CLAUDE_CODE_BIN (
     if exist "%CLAUDE_CODE_BIN%" (
-        "%CLAUDE_CODE_BIN%" --chrome-native-host
+        "%CLAUDE_CODE_BIN%" --chrome-native-host 2>>"%~dp0host.log"
         exit /b %ERRORLEVEL%
     )
 )
 
 where claude.exe >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    claude.exe --chrome-native-host
+    claude.exe --chrome-native-host 2>>"%~dp0host.log"
     exit /b %ERRORLEVEL%
 )
 
 set "CANDIDATE=%LOCALAPPDATA%\Programs\claude-code\claude.exe"
 if exist "%CANDIDATE%" (
-    "%CANDIDATE%" --chrome-native-host
+    "%CANDIDATE%" --chrome-native-host 2>>"%~dp0host.log"
     exit /b %ERRORLEVEL%
 )
 
