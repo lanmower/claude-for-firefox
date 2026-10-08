@@ -324,7 +324,7 @@ if not exist "%EXT_DIR%" (
     exit /b 1
 )
 echo Launching Firefox with Claude extension...
-start "" /b cmd /c npx --yes web-ext run --source-dir "%EXT_DIR%" --firefox "$FirefoxPath" --no-reload
+start "" /b cmd /c npx --yes web-ext run --source-dir "%EXT_DIR%" --firefox "$FirefoxPath" --firefox-profile "%USERPROFILE%\.claude\firefox\profile" --profile-create-if-missing --keep-profile-changes --start-url about:blank --pref=browser.startup.homepage_override.mstone=ignore --pref=startup.homepage_welcome_url= --pref=startup.homepage_welcome_url.additional= --pref=browser.aboutwelcome.enabled=false --pref=browser.shell.checkDefaultBrowser=false --pref=datareporting.policy.dataSubmissionPolicyBypassNotification=true --pref=browser.startup.page=0 --pref=trailhead.firstrun.didSeeAboutWelcome=true --no-reload
 "@
     Set-Content -Path $batPath -Value $batContent -Encoding ASCII
     Write-Ok "Launcher .bat created at $batPath"
@@ -339,7 +339,7 @@ if (-not (Test-Path `$extDir)) {
     exit 1
 }
 Write-Host 'Launching Firefox with Claude extension...'
-& npx --yes web-ext run --source-dir `$extDir --firefox '$FirefoxPath' --no-reload
+& npx --yes web-ext run --source-dir `$extDir --firefox '$FirefoxPath' --firefox-profile (Join-Path `$env:USERPROFILE '.claude\firefox\profile') --profile-create-if-missing --keep-profile-changes --start-url about:blank '--pref=browser.startup.homepage_override.mstone=ignore' '--pref=startup.homepage_welcome_url=' '--pref=startup.homepage_welcome_url.additional=' '--pref=browser.aboutwelcome.enabled=false' '--pref=browser.shell.checkDefaultBrowser=false' '--pref=datareporting.policy.dataSubmissionPolicyBypassNotification=true' '--pref=browser.startup.page=0' '--pref=trailhead.firstrun.didSeeAboutWelcome=true' --no-reload
 "@
     Set-Content -Path $ps1Path -Value $ps1Content -Encoding UTF8
     Write-Ok "Launcher .ps1 created at $ps1Path"
